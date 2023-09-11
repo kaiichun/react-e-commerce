@@ -95,9 +95,9 @@ function ProductEdit() {
         <LoadingOverlay visible={isLoading} />
         <TextInput
           value={name}
-          placeholder="Enter the movie title here"
-          label="Title"
-          description="The title of the movie"
+          placeholder="Enter the product name here"
+          label="Name"
+          description="The name of the product"
           withAsterisk
           onChange={(event) => setName(event.target.value)}
         />

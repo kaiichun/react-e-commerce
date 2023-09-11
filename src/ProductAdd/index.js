@@ -15,7 +15,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { notifications } from "@mantine/notifications";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 
-const addMovie = async (data) => {
+const addProduct = async (data) => {
   const response = await axios({
     method: "POST",
     url: "http://localhost:8880/products",
@@ -37,10 +37,10 @@ function ProductAdd() {
 
   // create mutation
   const createMutation = useMutation({
-    mutationFn: addMovie,
+    mutationFn: addProduct,
     onSuccess: () => {
       notifications.show({
-        title: "New Added",
+        title: "New Product Added",
         color: "green",
       });
       navigate("/");
@@ -76,9 +76,9 @@ function ProductAdd() {
       <Card withBorder shadow="md" p="20px">
         <TextInput
           value={name}
-          placeholder="Enter the movie title here"
-          label="Title"
-          description="The title of the movie"
+          placeholder="Enter the product name here"
+          label="Name"
+          description="The name of the product"
           withAsterisk
           onChange={(event) => setName(event.target.value)}
         />

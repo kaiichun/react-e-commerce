@@ -116,7 +116,7 @@ function Product() {
                     <Title order={5}>{product.name}</Title>
                     <Space h="20px" />
                     <Group position="apart" spacing="5px">
-                      <Badge color="green">{product.price}</Badge>
+                      <Badge color="green">${product.price}</Badge>
                       <Badge color="yellow">{product.category}</Badge>
                     </Group>
                     <Space h="10px" />
