@@ -1,5 +1,4 @@
 import { useState } from "react";
-import axios from "axios";
 import {
   Container,
   Title,
@@ -10,22 +9,25 @@ import {
   Divider,
   Button,
   Group,
+  Image,
 } from "@mantine/core";
+import { Dropzone, IMAGE_MIME_TYPE } from "@mantine/dropzone";
 import { Link, useNavigate } from "react-router-dom";
 import { notifications } from "@mantine/notifications";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { addProduct, uploadProductImage } from "../api/products";
 
-const addProduct = async (data) => {
-  const response = await axios({
-    method: "POST",
-    url: "http://localhost:8880/products",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    data: data,
-  });
-  return response.data;
-};
+// const addProduct = async (data) => {
+//   const response = await axios({
+//     method: "POST",
+//     url: "http://localhost:8880/products",
+//     headers: {
+//       "Content-Type": "application/json",
+//     },
+//     data: data,
+//   });
+//   return response.data;
+// };
 
 function ProductAdd() {
   const navigate = useNavigate();
@@ -34,6 +36,7 @@ function ProductAdd() {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
+  const [image, setImage] = useState("");
 
   // create mutation
   const createMutation = useMutation({
@@ -62,8 +65,30 @@ function ProductAdd() {
         description: description,
         price: price,
         category: category,
+        image: image,
       })
     );
+  };
+
+  const uploadMutation = useMutation({
+    mutationFn: uploadProductImage,
+    onSuccess: (data) => {
+      setImage(data.image_url);
+      notifications.show({
+        title: "Image uploaded successfully",
+        color: "yellow",
+      });
+    },
+    onError: (error) => {
+      notifications.show({
+        title: error.response.data.message,
+        color: "red",
+      });
+    },
+  });
+
+  const handleImageUpload = (files) => {
+    uploadMutation.mutate(files[0]);
   };
 
   return (
@@ -83,7 +108,30 @@ function ProductAdd() {
           onChange={(event) => setName(event.target.value)}
         />
         <Space h="20px" />
-        <Divider />
+        {image && image !== "" ? (
+          <>
+            <Image
+              src={"http://localhost:8880/" + image}
+              width="50vw"
+              height="50vh"
+            />
+            <Button color="dark" mt="15px" onClick={() => setImage("")}>
+              Remove Image
+            </Button>
+          </>
+        ) : (
+          <Dropzone
+            multiple={false}
+            accept={IMAGE_MIME_TYPE}
+            onDrop={(files) => {
+              handleImageUpload(files);
+            }}
+          >
+            <Title order={4} align="center" py="20px">
+              Click to upload or Drag image to upload
+            </Title>
+          </Dropzone>
+        )}
         <Space h="20px" />
         <TextInput
           value={description}

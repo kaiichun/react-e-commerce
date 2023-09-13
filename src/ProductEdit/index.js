@@ -10,29 +10,46 @@ import {
   Divider,
   Button,
   Group,
+  Image,
   LoadingOverlay,
 } from "@mantine/core";
+import { Dropzone, IMAGE_MIME_TYPE } from "@mantine/dropzone";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { notifications } from "@mantine/notifications";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { getProduct, updateProduct, uploadProductImage } from "../api/products";
 
-const getProduct = async (id) => {
-  const response = await axios.get("http://localhost:8880/products/" + id);
-  return response.data;
-};
+// const getProduct = async (id) => {
+//   const response = await axios.get("http://localhost:8880/products/" + id);
+//   return response.data;
+// };
 
-const updateProduct = async ({ id, data }) => {
-  console.log(data);
-  const response = await axios({
-    method: "PUT",
-    url: "http://localhost:8880/products/" + id,
-    headers: {
-      "Content-Type": "application/json",
-    },
-    data: data,
-  });
-  return response.data;
-};
+// const updateProduct = async ({ id, data }) => {
+//   console.log(data);
+//   const response = await axios({
+//     method: "PUT",
+//     url: "http://localhost:8880/products/" + id,
+//     headers: {
+//       "Content-Type": "application/json",
+//     },
+//     data: data,
+//   });
+//   return response.data;
+// };
+
+// const uploadProductImage = async (file) => {
+//     const formData = new FormData();
+//     formData.append("image", file);
+//     const response = await axios({
+//       method: "POST",
+//       url: API_URL + "/images",
+//       headers: {
+//         "Content-Type": "multipart/form-data"
+//       },
+//       data: formData
+//     });
+//     return response.data;
+//   };
 
 function ProductEdit() {
   const { id } = useParams();
@@ -41,6 +58,8 @@ function ProductEdit() {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
+  const [image, setImage] = useState("");
+  const [uploading, setUploading] = useState(false);
   const { isLoading } = useQuery({
     queryKey: ["products", id],
     queryFn: () => getProduct(id),
@@ -49,6 +68,7 @@ function ProductEdit() {
       setDescription(data.description);
       setPrice(data.price);
       setCategory(data.category);
+      setImage(data.image);
     },
   });
 
@@ -71,7 +91,7 @@ function ProductEdit() {
     },
   });
 
-  const handleUpdateMovie = async (event) => {
+  const handleUpdateProduct = async (event) => {
     event.preventDefault();
     updateMutation.mutate({
       id: id,
@@ -80,15 +100,40 @@ function ProductEdit() {
         description: description,
         price: price,
         category: category,
+        image: image,
       }),
     });
+  };
+
+  const uploadMutation = useMutation({
+    mutationFn: uploadProductImage,
+    onSuccess: (data) => {
+      setImage(data.image_url);
+      setUploading(false);
+      notifications.show({
+        title: "Image uploaded successfully",
+        color: "yellow",
+      });
+    },
+    onError: (error) => {
+      setUploading(false);
+      notifications.show({
+        title: error.response.data.message,
+        color: "red",
+      });
+    },
+  });
+
+  const handleImageUpload = (files) => {
+    uploadMutation.mutate(files[0]);
+    setUploading(true);
   };
 
   return (
     <Container>
       <Space h="50px" />
       <Title order={2} align="center">
-        Edit Movie
+        Edit Product information
       </Title>
       <Space h="50px" />
       <Card withBorder shadow="md" p="20px">
@@ -102,7 +147,30 @@ function ProductEdit() {
           onChange={(event) => setName(event.target.value)}
         />
         <Space h="20px" />
-        <Divider />
+        {image && image !== "" ? (
+          <>
+            <Image
+              src={"http://localhost:8880/" + image}
+              width="50vw"
+              height="50vh"
+            />
+            <Button color="dark" mt="15px" onClick={() => setImage("")}>
+              Remove Image
+            </Button>
+          </>
+        ) : (
+          <Dropzone
+            multiple={false}
+            accept={IMAGE_MIME_TYPE}
+            onDrop={(files) => {
+              handleImageUpload(files);
+            }}
+          >
+            <Title order={4} align="center" py="20px">
+              Click to upload or Drag image to upload
+            </Title>
+          </Dropzone>
+        )}
         <Space h="20px" />
         <TextInput
           value={description}
@@ -137,7 +205,7 @@ function ProductEdit() {
         />
 
         <Space h="20px" />
-        <Button fullWidth onClick={handleUpdateMovie}>
+        <Button fullWidth onClick={handleUpdateProduct}>
           Update
         </Button>
       </Card>

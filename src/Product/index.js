@@ -13,65 +13,150 @@ import {
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { fetchProducts, deleteProduct } from "../api/products";
+import { addToCart, getCartItems } from "../api/cart";
 
-const fetchProduct = async (category) => {
-  // 3. trigger new API
-  const response = await axios.get(
-    "http://localhost:8880/products?" +
-      (category !== "" ? "category=" + category : "")
-  );
-  return response.data; // products data from express
-};
+// const fetchProducts = async (category) => {
+//   const response = await axios.get(
+//     "http://localhost:8880/products?" +
+//       (category !== "" ? "category=" + category : "")
+//   );
+//   return response.data; // products data from express
+// };
 
-const deleteProduct = async (product_id = "") => {
-  const response = await axios({
-    method: "DELETE",
-    url: "http://localhost:8880/products/" + product_id,
-  });
-  return response.data;
-};
+// const deleteProduct = async (product_id = "") => {
+//   const response = await axios({
+//     method: "DELETE",
+//     url: "http://localhost:8880/products/" + product_id,
+//   });
+//   return response.data;
+// };
 
-function Product() {
-  const navigate = useNavigate();
+function Products() {
   const queryClient = useQueryClient();
+  const [currentProducts, setCurrentProducts] = useState([]);
   const [category, setCategory] = useState("");
-  // 4. movies data will be updated depending on the genre selected
-  const {
-    isLoading,
-    isError,
-    data: products,
-    error,
-  } = useQuery({
-    queryKey: ["products", category],
-    queryFn: () => fetchProduct(category),
+  const [sort, setSort] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(6);
+  const [totalPages, setTotalPages] = useState([]);
+  const { isLoading, data: products } = useQuery({
+    queryKey: ["products"],
+    queryFn: () => fetchProducts(),
+  });
+  const { data: cart = [] } = useQuery({
+    queryKey: ["cart"],
+    queryFn: getCartItems,
   });
 
-  const memoryProducts = queryClient.getQueryData(["products", ""]);
+  useEffect(() => {
+    /* 
+      everything here will trigger when 
+        - products is updated OR 
+        - category is changed OR
+        - sort is updated OR
+        - perPage is updated OR
+        - currentPage is updated
+    */
+    // method 1:
+    // if (category !== "") {
+    //   const filteredProducts = products.filter((p) => p.category === category);
+    //   setCurrentProducts(filteredProducts);
+    // } else {
+    //   setCurrentProducts(products);
+    // }
+    // method 2:
+    let newList = products ? [...products] : [];
+    // filter by category
+    if (category !== "") {
+      newList = newList.filter((p) => p.category === category);
+    }
+    // get total pages
+    /*
+      for example, 
+        total items: 20 
+        items per page: 6
+        4 pages (20/6) = 3.333
+    */
+    const total = Math.ceil(newList.length / perPage);
+    // convert the total number into array
+    const pages = [];
+    for (let i = 1; i <= total; i++) {
+      pages.push(i);
+    }
+    setTotalPages(pages);
+
+    // sorting
+    switch (sort) {
+      case "name":
+        newList = newList.sort((a, b) => {
+          return a.name.localeCompare(b.name);
+        });
+        break;
+      case "price":
+        newList = newList.sort((a, b) => {
+          return a.price - b.price;
+        });
+        break;
+      default:
+        break;
+    }
+    // do pagination
+    const start = (currentPage - 1) * perPage;
+    const end = start + perPage;
+    /*
+      const start =6;
+      currentPage = 1
+      perPage = 6
+      start = 1-1 * 6 = 0
+      end = 0 + 6
+      currentPage = 2
+      perPage = 6
+      start = 2-1 * 6 = 6
+      end = 6 + 6 = 12
+      currentPage = 3
+      perPage = 6
+      start = 3-1 * 6 = 12
+      end = 12 + 6 = 18
+    */
+    newList = newList.slice(start, end);
+
+    setCurrentProducts(newList);
+  }, [products, category, sort, perPage, currentPage]);
+
   const categoryOptions = useMemo(() => {
     let options = [];
-    // loop through all the movies to get the genre from each movie
-    if (memoryProducts && memoryProducts.length > 0) {
-      memoryProducts.forEach((product) => {
-        // to make sure the genre wasn't already in the options
+    if (products && products.length > 0) {
+      products.forEach((product) => {
         if (!options.includes(product.category)) {
           options.push(product.category);
         }
       });
     }
     return options;
-  }, [memoryProducts]);
+  }, [products]);
 
   const deleteMutation = useMutation({
     mutationFn: deleteProduct,
     onSuccess: () => {
-      // this will be triggered when API is successfully executed
-      // ask the react query to retrigger the API
       queryClient.invalidateQueries({
-        queryKey: ["products", category],
+        queryKey: ["products"],
       });
-      // show movie is deleted message
       notifications.show({
-        title: "Product already Deleted",
+        title: "Product is Deleted Successfully",
+        color: "red",
+      });
+    },
+  });
+
+  const addToCartMutation = useMutation({
+    mutationFn: addToCart,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["cart"],
+      });
+      notifications.show({
+        title: "Product Added to Cart",
         color: "green",
       });
     },
@@ -93,9 +178,11 @@ function Product() {
           value={category}
           onChange={(event) => {
             setCategory(event.target.value);
+            // reset it back to page 1
+            setCurrentPage(1);
           }}
         >
-          <option value="">All Categories</option>
+          <option value="">All Category</option>
           {categoryOptions.map((category) => {
             return (
               <option key={category} value={category}>
@@ -104,14 +191,38 @@ function Product() {
             );
           })}
         </select>
+        <select
+          value={sort}
+          onChange={(event) => {
+            setSort(event.target.value);
+            // reset it back to page 1
+            setCurrentPage(1);
+          }}
+        >
+          <option value="">No Sorting</option>
+          <option value="name">Sort by Name</option>
+          <option value="price">Sort by Price</option>
+        </select>
+        <select
+          value={perPage}
+          onChange={(event) => {
+            setPerPage(parseInt(event.target.value));
+            // reset it back to page 1
+            setCurrentPage(1);
+          }}
+        >
+          <option value="6">6 Per Page</option>
+          <option value="10">10 Per Page</option>
+          <option value={9999999999}>All</option>
+        </select>
       </Group>
       <Space h="20px" />
       <LoadingOverlay visible={isLoading} />
       <Grid>
-        {products
-          ? products.map((product) => {
+        {currentProducts
+          ? currentProducts.map((product) => {
               return (
-                <Grid.Col key={product._id} xs={12} sm={6} lg={4}>
+                <Grid.Col key={product._id} lg={4} md={6} sm={12}>
                   <Card withBorder shadow="sm" p="20px">
                     <Title order={5}>{product.name}</Title>
                     <Space h="20px" />
@@ -119,11 +230,16 @@ function Product() {
                       <Badge color="green">${product.price}</Badge>
                       <Badge color="yellow">{product.category}</Badge>
                     </Group>
-                    <Space h="10px" />
-                    <Button fullWidth radius="7px">
-                      Add to Cart
+                    <Space h="20px" />
+                    <Button
+                      fullWidth
+                      onClick={() => {
+                        addToCartMutation.mutate(product);
+                      }}
+                    >
+                      Add To Cart
                     </Button>
-                    <Space h="12px" />
+                    <Space h="20px" />
                     <Group position="apart">
                       <Button
                         component={Link}
@@ -151,8 +267,34 @@ function Product() {
             })
           : null}
       </Grid>
+      <Space h="40px" />
+      <Group position="center">
+        {totalPages.map((page) => {
+          return (
+            <button
+              key={page}
+              onClick={() => {
+                setCurrentPage(page);
+              }}
+            >
+              {page}
+            </button>
+          );
+        })}
+      </Group>{" "}
+      <Space h="10px" />{" "}
+      <Group position="center">
+        <span
+          style={{
+            marginRight: "10px",
+          }}
+        >
+          Page {currentPage} of {totalPages.length}
+        </span>
+      </Group>
+      <Space h="40px" />
     </>
   );
 }
 
-export default Product;
+export default Products;
