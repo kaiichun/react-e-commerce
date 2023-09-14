@@ -1,6 +1,6 @@
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import { getCartItems, removeItemFromCart } from "../api/cart";
+import { getCartItems, removeFromCart } from "../api/cart";
 import {
   Container,
   Title,
@@ -55,7 +55,7 @@ export default function Cart() {
   };
 
   const deleteMutation = useMutation({
-    mutationFn: removeItemFromCart,
+    mutationFn: removeFromCart,
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["cart"],

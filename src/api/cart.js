@@ -28,7 +28,7 @@ export const addToCart = (product) => {
 };
 
 // remove product from cart
-export const removeItemFromCart = (id) => {
+export const removeFromCart = (id) => {
   const cart = getCartItems();
   const newList = cart.filter((c) => {
     if (id === c._id) {
