@@ -18,6 +18,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { notifications } from "@mantine/notifications";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getProduct, updateProduct, uploadProductImage } from "../api/products";
+import Header from "../Header";
 
 // const getProduct = async (id) => {
 //   const response = await axios.get("http://localhost:8880/products/" + id);
@@ -76,11 +77,13 @@ function ProductEdit() {
     mutationFn: updateProduct,
     onSuccess: () => {
       // show add success message
+      // 显示添加成功消息
       notifications.show({
         title: "Product is updated successfully",
         color: "green",
       });
       // redirect back to home page
+      // 重定向回主页
       navigate("/");
     },
     onError: (error) => {
@@ -92,7 +95,9 @@ function ProductEdit() {
   });
 
   const handleUpdateProduct = async (event) => {
+    // 阻止表单默认提交行为
     event.preventDefault();
+    // 使用updateMutation mutation来更新商品信息
     updateMutation.mutate({
       id: id,
       data: JSON.stringify({
@@ -132,9 +137,7 @@ function ProductEdit() {
   return (
     <Container>
       <Space h="50px" />
-      <Title order={2} align="center">
-        Edit Product information
-      </Title>
+      <Header title="Edit Product information" />
       <Space h="50px" />
       <Card withBorder shadow="md" p="20px">
         <LoadingOverlay visible={isLoading} />

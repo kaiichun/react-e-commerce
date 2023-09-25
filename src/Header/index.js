@@ -1,32 +1,38 @@
-import { Group, Space, Button } from "@mantine/core";
+import { Group, Space, Title, Divider, Button } from "@mantine/core";
 import { Link } from "react-router-dom";
-export default function Header() {
+
+export default function Header({ title, page = "", text = "" }) {
   return (
     <div className="header">
-      <Space h="20px" />
+      <Space h="50px" />
+      <Title align="center">{title}</Title>
+      <Title align="center">{text}</Title>
+      <Space h="35px" />
       <Group position="center">
-        <Button component={Link} to="/" color="blue" size="xs" radius="50px">
+        <Button
+          component={Link}
+          to="/"
+          variant={page === "home" ? "filled" : "light"}
+        >
           Home
         </Button>
         <Button
           component={Link}
-          to="/Cart"
-          color="blue"
-          size="xs"
-          radius="50px"
+          to="/cart"
+          variant={page === "cart" ? "filled" : "light"}
         >
           Cart
         </Button>
         <Button
           component={Link}
-          to="/Order"
-          color="blue"
-          size="xs"
-          radius="50px"
+          to="/orders"
+          variant={page === "orders" ? "filled" : "light"}
         >
-          Order
+          My Orders
         </Button>
       </Group>
+      <Space h="20px" />
+      <Divider />
     </div>
   );
 }

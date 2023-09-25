@@ -1,6 +1,10 @@
 import { useQueryClient, useQuery, useMutation } from "@tanstack/react-query";
-import { useState } from "react";
-import { getCartItems, removeFromCart } from "../api/cart";
+import { useState, useMemo } from "react";
+import {
+  getCartItems,
+  removeItemFromCart,
+  removeItemsFromCart,
+} from "../api/cart";
 import {
   Container,
   Title,
@@ -14,21 +18,29 @@ import {
 import { Checkbox } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import Header from "../Header";
+import { Link } from "react-router-dom";
 
 export default function Cart() {
   const queryClient = useQueryClient();
+  const [checkedList, setCheckedList] = useState([]);
+  const [checkAll, setCheckAll] = useState(false);
   const { data: cart = [] } = useQuery({
     queryKey: ["cart"],
     queryFn: getCartItems,
   });
 
-  // console.log(queryClient.getQueryData(["cart"]));
-  //   console.log(getCartItems());
-  // console.log(cart);
+  // const calculateTotal = () => {
+  //   let total = 0;
+  //   cart.map((item) => (total = total + item.quantity * item.price));
+  //   console.log(total);
+  //   return total;
+  // };
 
-  const [checkedList, setCheckedList] = useState([]);
-  const [checkAll, setCheckAll] = useState(false);
-  const [productList, setProductList] = useState([]);
+  const cartTotal = useMemo(() => {
+    let total = 0;
+    cart.map((item) => (total = total + item.quantity * item.price));
+    return total;
+  }, [cart]);
 
   const checkBoxAll = (event) => {
     if (event.target.checked) {
@@ -43,19 +55,27 @@ export default function Cart() {
       setCheckAll(false);
     }
   };
+
   const checkboxOne = (event, id) => {
     if (event.target.checked) {
       const newCheckedList = [...checkedList];
       newCheckedList.push(id);
       setCheckedList(newCheckedList);
     } else {
-      const newCheckedList = checkedList.filter((c) => c !== id);
+      const newCheckedList = checkedList.filter((cart) => cart !== id);
       setCheckedList(newCheckedList);
+      if (newCheckedList.length === 0) {
+        setCheckAll(false);
+      }
     }
   };
 
+  const deleteCheckedItems = () => {
+    deleteProductsMutation.mutate(checkedList);
+  };
+
   const deleteMutation = useMutation({
-    mutationFn: removeFromCart,
+    mutationFn: removeItemFromCart,
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["cart"],
@@ -64,23 +84,28 @@ export default function Cart() {
         title: "Product Deleted",
         color: "green",
       });
-      setCheckAll(false);
     },
   });
 
-  const calculateTotal = () => {
-    let total = 0;
-    cart.map((item) => (total = total + item.quantity * item.price));
-    return total;
-  };
+  const deleteProductsMutation = useMutation({
+    mutationFn: removeItemsFromCart,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["cart"],
+      });
+      notifications.show({
+        title: "Selected Products Deleted",
+        color: "green",
+      });
+      // to reset the checkbox
+      setCheckAll(false);
+      setCheckedList([]);
+    },
+  });
 
   return (
     <Container>
-      <Space h="50px" />
-      <Title align="center">Welcome To My Store</Title>
-      <Space h="5px" />
-      <Title align="center">வண்டி</Title>
-      <Header />
+      <Header title="Cart" page="cart" />
       <Space h="35px" />
       <Table highlightOnHover>
         <thead>
@@ -129,8 +154,7 @@ export default function Cart() {
                       <>
                         <Image
                           src={"http://localhost:8880/" + c.image}
-                          width="10vw"
-                          height="10vh"
+                          width="100px"
                         />
                       </>
                     ) : (
@@ -138,8 +162,7 @@ export default function Cart() {
                         src={
                           "https://www.aachifoods.com/templates/default-new/images/no-prd.jpg"
                         }
-                        width="10vw"
-                        height="8vh"
+                        width="100px"
                       />
                     )}
                   </td>
@@ -150,13 +173,9 @@ export default function Cart() {
                   <td>
                     <Group position="right">
                       <Button
+                        variant="outline"
                         color="red"
                         size="sm"
-                        disabled={
-                          checkedList && checkedList.includes(c._id)
-                            ? false
-                            : true
-                        }
                         onClick={(event) => {
                           deleteMutation.mutate(c._id);
                         }}
@@ -176,7 +195,7 @@ export default function Cart() {
           <tr>
             <td colSpan={5} className="text-end me-5"></td>
             <td>
-              <strong>${calculateTotal()}</strong>
+              <strong>${cartTotal}</strong>
             </td>
             <td></td>
           </tr>
@@ -191,11 +210,18 @@ export default function Cart() {
           disabled={checkedList && checkedList.length > 0 ? false : true}
           onClick={(event) => {
             event.preventDefault();
+            deleteCheckedItems();
           }}
         >
           Delete Selected
         </Button>
-        <Button>Checkout</Button>
+        <Button
+          component={Link}
+          to="/checkout"
+          disabled={cart.length > 0 ? false : true}
+        >
+          Checkout
+        </Button>
       </Group>
     </Container>
   );

@@ -16,6 +16,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { notifications } from "@mantine/notifications";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { addProduct, uploadProductImage } from "../api/products";
+import Header from "../Header";
 
 // const addProduct = async (data) => {
 //   const response = await axios({
@@ -94,9 +95,7 @@ function ProductAdd() {
   return (
     <Container>
       <Space h="50px" />
-      <Title order={2} align="center">
-        Add New Product
-      </Title>
+      <Header title="Add New Product" />
       <Space h="50px" />
       <Card withBorder shadow="md" p="20px">
         <TextInput

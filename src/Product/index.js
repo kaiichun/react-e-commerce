@@ -40,12 +40,24 @@ function Products() {
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(6);
   const [totalPages, setTotalPages] = useState([]);
+  // Use useQuery to fetch product data from the API. isLoading indicates whether it's currently loading, and data stores the returned product data.
+  // 使用 useQuery 从 API 获取产品数据，isLoading 表示是否正在加载中，data 存储返回的产品数据
   const { isLoading, data: products } = useQuery({
+    // Define a unique identifier for the query.
+    // 定义查询的唯一标识符
     queryKey: ["products"],
+    // The query logic; it calls the fetchProducts() function to retrieve product data.
+    // 查询的逻辑，调用 fetchProducts() 函数来获取产品数据
     queryFn: () => fetchProducts(),
   });
+  // Use useQuery to fetch cart data from the API. data stores the returned cart data, which defaults to an empty array.
+  // 使用 useQuery 从 API 获取购物车数据，data 存储返回的购物车数据，默认为空数组
   const { data: cart = [] } = useQuery({
+    // Define a unique identifier for the query.
+    // 定义查询的唯一标识符
     queryKey: ["cart"],
+    // The query logic; it calls the getCartItems() function to retrieve cart data.
+    // 查询的逻辑，调用 getCartItems() 函数来获取购物车数据
     queryFn: getCartItems,
   });
 
@@ -65,19 +77,13 @@ function Products() {
     // } else {
     //   setCurrentProducts(products);
     // }
+
     // method 2:
     let newList = products ? [...products] : [];
     // filter by category
     if (category !== "") {
       newList = newList.filter((p) => p.category === category);
     }
-    // get total pages
-    /*
-      for example, 
-        total items: 20 
-        items per page: 6
-        4 pages (20/6) = 3.333
-    */
     const total = Math.ceil(newList.length / perPage);
     // convert the total number into array
     const pages = [];

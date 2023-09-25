@@ -24,18 +24,6 @@ export const addProduct = async (data) => {
   return response.data;
 };
 
-export const updateProduct = async ({ id, data }) => {
-  const response = await axios({
-    method: "PUT",
-    url: API_URL + "/products/" + id,
-    headers: {
-      "Content-Type": "application/json",
-    },
-    data: data,
-  });
-  return response.data;
-};
-
 export const uploadProductImage = async (file) => {
   const formData = new FormData();
   formData.append("image", file);
@@ -46,6 +34,18 @@ export const uploadProductImage = async (file) => {
       "Content-Type": "multipart/form-data",
     },
     data: formData,
+  });
+  return response.data;
+};
+
+export const updateProduct = async ({ id, data }) => {
+  const response = await axios({
+    method: "PUT",
+    url: API_URL + "/products/" + id,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    data: data,
   });
   return response.data;
 };

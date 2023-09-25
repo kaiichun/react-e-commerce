@@ -1,18 +1,15 @@
 import { Container, Title, Space, Divider } from "@mantine/core";
 import { Link } from "react-router-dom";
+
+import Product from "../Product";
 import Header from "../Header";
-import Products from "../Product";
 
 function Home() {
   return (
     <Container>
-      <Space h="50px" />
-      <Title align="center">Welcome To My Store</Title>
-      <Header />
-      <Space h="20px" />
-      <Divider />
+      <Header title={"Welcome To My Store"} page="home" text="வீடு" />
       <Space h="30px" />
-      <Products />
+      <Product />
       <Space h="30px" />
     </Container>
   );
