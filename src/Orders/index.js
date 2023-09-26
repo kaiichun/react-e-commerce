@@ -11,13 +11,10 @@ import {
   Select,
   Divider,
 } from "@mantine/core";
-import { Checkbox } from "@mantine/core";
-import { useNavigate } from "react-router-dom";
 import { notifications } from "@mantine/notifications";
 import { Link } from "react-router-dom";
 import Header from "../Header";
-import { fetchOrders, deleteOrder, updateStatus, getOrder } from "../api/order";
-import axios from "axios";
+import { fetchOrders, deleteOrder, updateStatus } from "../api/order";
 
 export default function Orders() {
   const queryClient = useQueryClient();
