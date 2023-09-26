@@ -63,7 +63,7 @@ export default function Orders() {
         queryKey: ["orders"],
       });
       notifications.show({
-        title: "Orders Deleted",
+        title: "Order Deleted",
         color: "green",
       });
     },
@@ -71,13 +71,13 @@ export default function Orders() {
 
   return (
     <>
-      <Container>
+      <Container fluid>
         <Header title="My Orders" page="orders" text="Historial de pedidos" />
         <Space h="30px" />
         <Table>
           <thead>
             <tr>
-              <th>Order ID</th>
+              <th>Customer Name</th>
               <th>Products</th>
               <th>Total Amount</th>
               <th>Status</th>
@@ -96,27 +96,24 @@ export default function Orders() {
                       </td>
                       <td>
                         {o.products.map((product, index) => (
-                          <div key={index}>
-                            <Group>
-                              {product.image && product.image !== "" ? (
-                                <>
-                                  <Image
-                                    src={
-                                      "http://localhost:8880/" + product.image
-                                    }
-                                    width="100px"
-                                  />
-                                </>
-                              ) : (
+                          <div key={index} style={{ display: "flex" }}>
+                            {product.image && product.image !== "" ? (
+                              <>
                                 <Image
-                                  src={
-                                    "https://www.aachifoods.com/templates/default-new/images/no-prd.jpg"
-                                  }
-                                  width="100px"
+                                  src={"http://localhost:8880/" + product.image}
+                                  width="50px"
                                 />
-                              )}
-                              <p>{product.name}</p>
-                            </Group>
+                              </>
+                            ) : (
+                              <Image
+                                src={
+                                  "https://www.aachifoods.com/templates/default-new/images/no-prd.jpg"
+                                }
+                                width="50px"
+                              />
+                            )}
+                            <Space w="10px" />
+                            <p>{product.name}</p>
                           </div>
                         ))}
                       </td>
@@ -126,8 +123,8 @@ export default function Orders() {
                           checkIconPosition="right"
                           dropdownOpened
                           pb={150}
-                          width="100px"
                           value={o.status}
+                          w="200px"
                           onChange={(valueOne) =>
                             handleUpdateStatus(o, valueOne)
                           }
@@ -144,7 +141,7 @@ export default function Orders() {
                       </td>
                       <td>{o.paid_at}</td>
                       <td>
-                        {o.status !== "Pending" ? (
+                        {o.status === "Pending" ? (
                           <Button
                             variant="outline"
                             color="red"
