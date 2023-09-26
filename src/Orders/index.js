@@ -120,7 +120,7 @@ export default function Orders() {
                       <td>{o.totalPrice}</td>
                       <td>
                         <Select
-                          checkIconPosition="right"
+                          checkIconPosition="left"
                           dropdownOpened
                           pb={150}
                           value={o.status}
@@ -131,11 +131,15 @@ export default function Orders() {
                           placeholder={o.status}
                           disabled={o.status === "Pending"}
                           data={[
-                            "Pending",
-                            "Paid",
-                            "Failed",
-                            "Shipped",
-                            "Delivered",
+                            {
+                              value: "Pending",
+                              label: "Pending",
+                              disabled: true,
+                            },
+                            { value: "Paid", label: "Paid" },
+                            { value: "Failed", label: "Failed" },
+                            { value: "Shipped", label: "Shipped" },
+                            { value: "Delivered", label: "Delivered" },
                           ]}
                         />
                       </td>
