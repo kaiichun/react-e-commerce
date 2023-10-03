@@ -8,24 +8,53 @@ import {
   Button,
   Image,
   Space,
-  Select,
+  TextInput,
   Divider,
+  Grid,
+  Text,
+  Select,
+  LoadingOverlay,
 } from "@mantine/core";
+import { Checkbox } from "@mantine/core";
+import { useNavigate, Link } from "react-router-dom";
 import { notifications } from "@mantine/notifications";
-import { Link } from "react-router-dom";
 import Header from "../Header";
-import { fetchOrders, deleteOrder, updateStatus } from "../api/order";
+import { useCookies } from "react-cookie";
+import { fetchOrders, deleteOrder, updateOrder } from "../api/order";
 
 export default function Orders() {
+  const [cookies] = useCookies(["currentUser"]);
+  const { currentUser } = cookies;
   const queryClient = useQueryClient();
-  const { data: orders = [] } = useQuery({
+  const { isLoading, data: orders = [] } = useQuery({
     queryKey: ["orders"],
-    queryFn: fetchOrders,
+    queryFn: () => fetchOrders(currentUser ? currentUser.token : ""),
   });
-  console.log(orders);
+
+  const isAdmin = useMemo(() => {
+    console.log(cookies);
+    return cookies &&
+      cookies.currentUser &&
+      cookies.currentUser.role === "admin"
+      ? true
+      : false;
+  }, [cookies]);
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteOrder,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["orders"],
+      });
+      notifications.show({
+        title: "Order Deleted",
+        color: "green",
+      });
+    },
+  });
 
   const updateMutation = useMutation({
-    mutationFn: updateStatus,
+    mutationFn: updateOrder,
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["orders"],
@@ -43,43 +72,21 @@ export default function Orders() {
     },
   });
 
-  const handleUpdateStatus = async (order, valueOne) => {
-    console.log(valueOne);
-    updateMutation.mutate({
-      id: order._id,
-      data: JSON.stringify({
-        status: valueOne,
-      }),
-    });
-  };
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteOrder,
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["orders"],
-      });
-      notifications.show({
-        title: "Order Deleted",
-        color: "green",
-      });
-    },
-  });
-
   return (
     <>
-      <Container fluid>
-        <Header title="My Orders" page="orders" text="Historial de pedidos" />
-        <Space h="30px" />
+      <Container size="100%">
+        <Header title="My Orders" page="orders" />
+        <Space h="35px" />
+        <LoadingOverlay visible={isLoading} />
         <Table>
           <thead>
             <tr>
-              <th>Customer Name</th>
+              <th>Customer</th>
               <th>Products</th>
               <th>Total Amount</th>
               <th>Status</th>
               <th>Payment Date</th>
-              <th>Actions</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -93,40 +100,37 @@ export default function Orders() {
                       </td>
                       <td>
                         {o.products.map((product, index) => (
-                          <div key={index} style={{ display: "flex" }}>
-                            {product.image && product.image !== "" ? (
-                              <>
+                          <div key={index}>
+                            <Group>
+                              {product.image && product.image !== "" ? (
+                                <>
+                                  <Image
+                                    src={
+                                      "http://localhost:8880/" + product.image
+                                    }
+                                    width="50px"
+                                  />
+                                </>
+                              ) : (
                                 <Image
-                                  src={"http://localhost:8880/" + product.image}
+                                  src={
+                                    "https://www.aachifoods.com/templates/default-new/images/no-prd.jpg"
+                                  }
                                   width="50px"
                                 />
-                              </>
-                            ) : (
-                              <Image
-                                src={
-                                  "https://www.aachifoods.com/templates/default-new/images/no-prd.jpg"
-                                }
-                                width="50px"
-                              />
-                            )}
-                            <Space w="10px" />
-                            <p>{product.name}</p>
+                              )}
+                              <p>{product.name}</p>
+                            </Group>
                           </div>
                         ))}
                       </td>
-                      <td>{o.totalPrice}</td>
+                      <td>${o.totalPrice}</td>
                       <td>
                         <Select
-                          checkIconPosition="left"
-                          dropdownOpened
-                          pb={150}
                           value={o.status}
-                          w="200px"
-                          onChange={(valueOne) =>
-                            handleUpdateStatus(o, valueOne)
+                          disabled={
+                            o.status === "Pending" || !isAdmin ? true : false
                           }
-                          placeholder={o.status}
-                          disabled={o.status === "Pending"}
                           data={[
                             {
                               value: "Pending",
@@ -138,21 +142,33 @@ export default function Orders() {
                             { value: "Shipped", label: "Shipped" },
                             { value: "Delivered", label: "Delivered" },
                           ]}
+                          onChange={(newValue) => {
+                            updateMutation.mutate({
+                              id: o._id,
+                              data: JSON.stringify({
+                                status: newValue,
+                              }),
+                              token: currentUser ? currentUser.token : "",
+                            });
+                          }}
                         />
                       </td>
                       <td>{o.paid_at}</td>
                       <td>
-                        {o.status === "Pending" ? (
+                        {o.status === "Pending" && isAdmin && (
                           <Button
                             variant="outline"
                             color="red"
                             onClick={() => {
-                              deleteMutation.mutate(o._id);
+                              deleteMutation.mutate({
+                                id: o._id,
+                                token: currentUser ? currentUser.token : "",
+                              });
                             }}
                           >
                             Delete
                           </Button>
-                        ) : null}
+                        )}
                       </td>
                     </tr>
                   );
@@ -160,11 +176,13 @@ export default function Orders() {
               : null}
           </tbody>
         </Table>
-        <Group position="center" pt="20px">
+        <Space h="20px" />
+        <Group position="center">
           <Button component={Link} to="/">
             Continue Shopping
           </Button>
         </Group>
+        <Space h="100px" />
       </Container>
     </>
   );

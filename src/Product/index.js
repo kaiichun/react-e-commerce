@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
+
 import axios from "axios";
 import {
   Title,
@@ -15,6 +16,7 @@ import { notifications } from "@mantine/notifications";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { fetchProducts, deleteProduct } from "../api/products";
 import { addToCart, getCartItems } from "../api/cart";
+import { useCookies } from "react-cookie";
 
 // const fetchProducts = async (category) => {
 //   const response = await axios.get(
@@ -33,7 +35,10 @@ import { addToCart, getCartItems } from "../api/cart";
 // };
 
 function Products() {
+  const [cookies] = useCookies(["currentUser"]);
+  const { currentUser } = cookies;
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [currentProducts, setCurrentProducts] = useState([]);
   const [category, setCategory] = useState("");
   const [sort, setSort] = useState("");
@@ -48,7 +53,7 @@ function Products() {
     queryKey: ["products"],
     // The query logic; it calls the fetchProducts() function to retrieve product data.
     // 查询的逻辑，调用 fetchProducts() 函数来获取产品数据
-    queryFn: () => fetchProducts(),
+    queryFn: () => fetchProducts(currentUser ? currentUser.token : ""),
   });
   // Use useQuery to fetch cart data from the API. data stores the returned cart data, which defaults to an empty array.
   // 使用 useQuery 从 API 获取购物车数据，data 存储返回的购物车数据，默认为空数组
@@ -168,15 +173,25 @@ function Products() {
     },
   });
 
+  const isAdmin = useMemo(() => {
+    return cookies &&
+      cookies.currentUser &&
+      cookies.currentUser.role === "admin"
+      ? true
+      : false;
+  }, [cookies]);
+
   return (
     <>
       <Group position="apart">
         <Title order={3} align="center">
           Products
         </Title>
-        <Button component={Link} to="/product_add" color="green">
-          Add New
-        </Button>
+        {isAdmin && (
+          <Button component={Link} to="/product_add" color="green">
+            Add New
+          </Button>
+        )}
       </Group>
       <Space h="20px" />
       <Group>
@@ -184,7 +199,6 @@ function Products() {
           value={category}
           onChange={(event) => {
             setCategory(event.target.value);
-            // reset it back to page 1
             setCurrentPage(1);
           }}
         >
@@ -201,7 +215,6 @@ function Products() {
           value={sort}
           onChange={(event) => {
             setSort(event.target.value);
-            // reset it back to page 1
             setCurrentPage(1);
           }}
         >
@@ -219,7 +232,7 @@ function Products() {
         >
           <option value="6">6 Per Page</option>
           <option value="10">10 Per Page</option>
-          <option value={9999999999}>All</option>
+          <option value={9999999}>All</option>
         </select>
       </Group>
       <Space h="20px" />
@@ -228,7 +241,7 @@ function Products() {
         {currentProducts
           ? currentProducts.map((product) => {
               return (
-                <Grid.Col key={product._id} lg={4} md={6} sm={12}>
+                <Grid.Col key={product._id} lg={4} md={6} sm={6} xs={6}>
                   <Card withBorder shadow="sm" p="20px">
                     <Title order={5}>{product.name}</Title>
                     <Space h="20px" />
@@ -240,33 +253,61 @@ function Products() {
                     <Button
                       fullWidth
                       onClick={() => {
-                        addToCartMutation.mutate(product);
+                        // pop a messsage if user is not logged in
+                        if (cookies && cookies.currentUser) {
+                          addToCartMutation.mutate(product);
+                        } else {
+                          notifications.show({
+                            title: "Please login to proceed",
+                            message: (
+                              <>
+                                <Button
+                                  color="red"
+                                  onClick={() => {
+                                    navigate("/login");
+                                    notifications.clean();
+                                  }}
+                                >
+                                  Click here to login
+                                </Button>
+                              </>
+                            ),
+                            color: "red",
+                          });
+                        }
                       }}
                     >
                       Add To Cart
                     </Button>
-                    <Space h="20px" />
-                    <Group position="apart">
-                      <Button
-                        component={Link}
-                        to={"/product/" + product._id}
-                        color="blue"
-                        size="xs"
-                        radius="50px"
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        color="red"
-                        size="xs"
-                        radius="50px"
-                        onClick={() => {
-                          deleteMutation.mutate(product._id);
-                        }}
-                      >
-                        Delete
-                      </Button>
-                    </Group>
+                    {isAdmin && (
+                      <>
+                        <Space h="20px" />
+                        <Group position="apart">
+                          <Button
+                            component={Link}
+                            to={"/product/" + product._id}
+                            color="blue"
+                            size="xs"
+                            radius="50px"
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            color="red"
+                            size="xs"
+                            radius="50px"
+                            onClick={() => {
+                              deleteMutation.mutate({
+                                id: product._id,
+                                token: currentUser ? currentUser.token : "",
+                              });
+                            }}
+                          >
+                            Delete
+                          </Button>
+                        </Group>
+                      </>
+                    )}
                   </Card>
                 </Grid.Col>
               );
@@ -274,7 +315,14 @@ function Products() {
           : null}
       </Grid>
       <Space h="40px" />
-      <Group position="center">
+      <div>
+        <span
+          style={{
+            marginRight: "10px",
+          }}
+        >
+          Page {currentPage} of {totalPages.length}
+        </span>
         {totalPages.map((page) => {
           return (
             <button
@@ -287,17 +335,7 @@ function Products() {
             </button>
           );
         })}
-      </Group>{" "}
-      <Space h="10px" />{" "}
-      <Group position="center">
-        <span
-          style={{
-            marginRight: "10px",
-          }}
-        >
-          Page {currentPage} of {totalPages.length}
-        </span>
-      </Group>
+      </div>
       <Space h="40px" />
     </>
   );

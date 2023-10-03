@@ -18,6 +18,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { notifications } from "@mantine/notifications";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getProduct, updateProduct, uploadProductImage } from "../api/products";
+import { useCookies } from "react-cookie";
+
 import Header from "../Header";
 
 // const getProduct = async (id) => {
@@ -53,6 +55,8 @@ import Header from "../Header";
 //   };
 
 function ProductEdit() {
+  const [cookies] = useCookies(["currentUser"]);
+  const { currentUser } = cookies;
   const { id } = useParams();
   const navigate = useNavigate();
   const [name, setName] = useState("");
@@ -107,6 +111,7 @@ function ProductEdit() {
         category: category,
         image: image,
       }),
+      token: currentUser ? currentUser.token : "",
     });
   };
 

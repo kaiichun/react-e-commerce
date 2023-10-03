@@ -17,6 +17,7 @@ import { notifications } from "@mantine/notifications";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import { addProduct, uploadProductImage } from "../api/products";
 import Header from "../Header";
+import { useCookies } from "react-cookie";
 
 // const addProduct = async (data) => {
 //   const response = await axios({
@@ -32,6 +33,8 @@ import Header from "../Header";
 
 function ProductAdd() {
   const navigate = useNavigate();
+  const [cookies] = useCookies(["currentUser"]);
+  const { currentUser } = cookies;
   // const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -60,15 +63,16 @@ function ProductAdd() {
 
   const handleAddNewPrdouct = async (event) => {
     event.preventDefault();
-    createMutation.mutate(
-      JSON.stringify({
+    createMutation.mutate({
+      data: JSON.stringify({
         name: name,
         description: description,
         price: price,
         category: category,
         image: image,
-      })
-    );
+      }),
+      token: currentUser ? currentUser.token : "",
+    });
   };
 
   const uploadMutation = useMutation({

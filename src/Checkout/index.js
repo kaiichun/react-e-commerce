@@ -19,12 +19,15 @@ import { useNavigate } from "react-router-dom";
 import { notifications } from "@mantine/notifications";
 import Header from "../Header";
 import { createOrder } from "../api/order";
+import { useCookies } from "react-cookie";
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const [cookies] = useCookies(["currentUser"]);
+  const { currentUser } = cookies;
   const [loading, setLoading] = useState(false);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [name, setName] = useState(currentUser ? currentUser.name : "");
+  const [email, setEmail] = useState(currentUser ? currentUser.email : "");
   const { data: cart = [] } = useQuery({
     queryKey: ["cart"],
     queryFn: getCartItems,
@@ -105,6 +108,7 @@ export default function Checkout() {
             value={email}
             placeholder="email address"
             label="Email"
+            disabled
             required
             onChange={(event) => setEmail(event.target.value)}
           />
