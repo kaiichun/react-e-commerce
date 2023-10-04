@@ -10,7 +10,6 @@ import {
 import { Link } from "react-router-dom";
 import { useCookies } from "react-cookie";
 import { clearCartItems } from "../api/cart";
-import { useNavigate } from "react-router-dom";
 
 export default function Header({ title, page = "", text = "" }) {
   const [cookies, setCookies, removeCookies] = useCookies(["currentUser"]);
